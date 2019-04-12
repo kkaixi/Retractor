@@ -115,11 +115,11 @@ plot_channels = [['12HEAD0000Y7ACXA','14HEAD0000Y7ACXA','16HEAD0000Y7ACXA'],
 #               .table.query_list('Speed', [48, np.nan]))
 
 
-subset = pd.concat([table.query('Retractor==\'Marc_4\' and Buckle==\'Original\''),
-                    table.query('Retractor==\'Vehicle\' and Buckle==\'Vehicle\' and Model==\'Harmony\'')], axis=0)
-
 #subset = pd.concat([table.query('Retractor==\'Marc_4\' and Buckle==\'Original\''),
-#                    table.query('Retractor==\'Vehicle\' and Buckle==\'Vehicle\' and Speed==48')], axis=0)
+#                    table.query('Retractor==\'Vehicle\' and Buckle==\'Vehicle\' and Model==\'Harmony\'')], axis=0)
+
+subset = pd.concat([table.query('Retractor==\'Marc_4\' and Buckle==\'Original\''),
+                    table.query('Retractor==\'Vehicle\' and Buckle==\'Vehicle\' and Speed==48')], axis=0)
 
 
 #subset = pd.concat([table.query('Retractor==\'Vehicle\'').table.query_list('Buckle',['Original','Short Flex']),
@@ -143,7 +143,7 @@ for ch in plot_channels:
                           'Cond': np.repeat(grp[1]['Cond'].values, len(t))})   
 #       if n<=3, plot individual tests!         
         if len(grp[1])<=3:
-            ax = sns.lineplot(x='t', y='ch', estimator=None, data=x, ci=None, ax=ax)
+            ax = sns.lineplot(x='t', y='ch', data=x, ci=None, ax=ax)
         else:
             ax = sns.lineplot(x='t', y='ch', data=x, ax=ax, linewidth=0.5, linestyle='--')
     ax.legend(ax.lines, legend_labels)
