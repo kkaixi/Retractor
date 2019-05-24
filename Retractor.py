@@ -33,6 +33,7 @@ channels = ['S0SLED000000ACXD',
             '12PELV0000Y7ACXA',
             '14PELV0000Y7ACXA',
             '16PELV0000Y7ACXA']
+drop = ['SE17-0039_3', 'SE17-0018_2']
 
 table, t, chdata = initialize(directory,channels, cutoff, drop=drop)
 chdata.at['SE18-0004_2','S0SLED000000ACXD'] = -chdata.at['SE18-0004_2','S0SLED000000ACXD']
@@ -116,7 +117,10 @@ min_len = chdata.applymap(len).min().min()
 chdata = chdata.applymap(lambda x: x[:min_len])
 t = t[:min_len]
 #%% Compare of in-vehicle vs. bench + original buckle + vehicle retractor vs. bench + flexible buckle + vehicle retractor 
-plot_channels = [['12CHST0000Y7ACXC','14CHST0000Y7ACXC','16CHST0000Y7ACXC']]
+plot_channels = [['12HEAD0000Y7ACXA','14HEAD0000Y7ACXA','16HEAD0000Y7ACXA'],
+                 ['12CHST0000Y7ACXC','14CHST0000Y7ACXC','16CHST0000Y7ACXC'],
+                 ['12PELV0000Y7ACXA','14PELV0000Y7ACXA','16PELV0000Y7ACXA']]  
+
 #subset = (table.query('Model==\'Turbo Booster\'')
 #               .table.query_list('Buckle',['Original','Short Flex','Vehicle'])
 #               .table.query_list('Retractor', ['Marc_4','None','Vehicle']))
@@ -148,6 +152,11 @@ plot_channels = [['12HEAD0000Y7ACXA','14HEAD0000Y7ACXA','16HEAD0000Y7ACXA'],
 # Marc retractor + original buckle + in vehicle @ 48
 #subset = pd.concat([table.query('Retractor==\'Marc_4\' and Buckle==\'Original\''),
 #                    table.query('Retractor==\'Vehicle\' and Buckle==\'Vehicle\' and Speed==48')], axis=0)
+
+
+# in vehicle vs on the bench 
+subset = pd.concat([table.query('Retractor==\'None\' and Buckle==\'Original\' and Model==\'Turbo Booster\''),
+                    table.query('Retractor==\'Vehicle\' and Buckle==\'Vehicle\' and Model==\'Turbo Booster\' and Speed==48')], axis=0)
 
 
 # Marc retractor + flexible buckle vs. Marc retractor + original buckle
