@@ -153,10 +153,15 @@ plot_channels = [['12HEAD0000Y7ACXA','14HEAD0000Y7ACXA','16HEAD0000Y7ACXA'],
 #subset = pd.concat([table.query('Retractor==\'Marc_4\' and Buckle==\'Original\''),
 #                    table.query('Retractor==\'Vehicle\' and Buckle==\'Vehicle\' and Speed==48')], axis=0)
 
+# Marc retractor + original buckle + in vehicle + Marc retractor + flexible buckle @ 48
+subset = pd.concat([table.query('Retractor==\'Marc_4\' and Buckle==\'Original\''),
+                    table.query('Retractor==\'Vehicle\' and Buckle==\'Vehicle\' and Speed==48'),
+                    table.query('Retractor==\'Marc_4\' and Buckle==\'Short Flex\'')], axis=0)
+
 
 # in vehicle vs on the bench 
-subset = pd.concat([table.query('Retractor==\'None\' and Buckle==\'Original\' and Model==\'Turbo Booster\''),
-                    table.query('Retractor==\'Vehicle\' and Buckle==\'Vehicle\' and Model==\'Turbo Booster\' and Speed==48')], axis=0)
+#subset = pd.concat([table.query('Retractor==\'None\' and Buckle==\'Original\' and Model==\'Turbo Booster\''),
+#                    table.query('Retractor==\'Vehicle\' and Buckle==\'Vehicle\' and Model==\'Turbo Booster\' and Speed==48')], axis=0)
 
 
 # Marc retractor + flexible buckle vs. Marc retractor + original buckle
@@ -202,11 +207,23 @@ for ch in plot_channels:
             palette = grp[1][['Cond','Color']].set_index('Cond',drop=True).squeeze().to_dict()
             ax = sns.lineplot(x='t', y='ch', hue='Cond', data=x, ax=ax, linewidth=0.5, linestyle='--', palette=palette)
             legend_lines.append(ax.lines[-1])
-    ax.legend(legend_lines, legend_labels, bbox_to_anchor=(1,-0.2), fontsize=16, ncol=2)
+    ax.legend(legend_lines, legend_labels, bbox_to_anchor=(1,-0.2), fontsize=16, ncol=1)
     ax.set_xlim([0, 0.12])
     ax = set_labels(ax, {'title': renameISO(merged_name), 'xlabel': 'Time [s]', 'ylabel': get_units(merged_name)})
     ax = adjust_font_sizes(ax, {'title': 20, 'axlabels': 18, 'ticklabels': 16})
 
+    # figure background colour
+    fig.patch.set_facecolor([64/255, 64/255, 64/255])
+    
+    # axis label colour
+    ax.xaxis.label.set_color('#ffffff')
+    ax.yaxis.label.set_color('#ffffff')
+    ax.tick_params(colors='#ffffff')
+    ax.title.set_color('#ffffff')
+                       
+    # axis face colour
+#    ax.set_facecolor([0.96, 0.96, 0.96])
+    
 #%%
     
 subset = (table.table.query_list('Retractor',['Marc_4','Vehicle','None'])
