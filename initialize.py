@@ -84,6 +84,8 @@ if __name__=='__main__':
              'Head_Excursion': 'Head Excursion',
              'Knee_Excursion': 'Knee Excursion',
              'sled_213_new_decel 213 Marc_4 short_flex': 'Modified Belt Assembly',
-             'sled_213_new_decel 213 None original': 'Original Belt Assembly'}
+             'sled_213_new_decel 213 None original': 'Original Belt Assembly',
+             '213': 'F/CMVSS 213 Pulse',
+             'TC17-110_88pct': 'Vehicle Pulse'}
     names = pd.Series(names)
     names.to_csv(directory + 'names.csv')

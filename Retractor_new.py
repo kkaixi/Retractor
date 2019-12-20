@@ -22,62 +22,13 @@ from functools import partial
 from PMG.COM.easyname import get_units, rename, rename_list, renameISO
 
 
-#%% workarounds for reading mme stuff
-#real_table = dataset.table
-#dataset.table = dataset.table.query('Year<2020')
-#dataset = dataset.read_timeseries()
-#
-#all_data = {i: unpack(dataset.timeseries.loc[i]) for i in dataset.table.index}
-#
-#dataset.table = real_table
-#mme_paths = glob.glob('P:\\2020\\20-5000\\20-5002\\Tests - Retractor\\**\\SE*.mme', recursive=True)
-#
-#for path in mme_paths:
-#    mme = MMEData(path)
-#    se = mme.info['Laboratory test ref. number']
-#    if se not in dataset.table.index:
-#        print('skip ' + se)
-#        continue
-#    all_data[se] = mme.to_dataframe().loc[400:].reset_index(drop=True)
-#dataset.timeseries = to_chdata(all_data, cutoff=cutoff)
-#dataset.t = dataset.t[cutoff]
+#%%
 
 dataset.get_data(['timeseries','features'])
 
 names = pd.read_csv(directory+'names.csv',index_col=0,header=None,squeeze=True)
 names = names.append(pd.Series({ch: renameISO(ch) for ch in dataset.channels}))
 rename = partial(rename, names=names)
-#%%
-#plot_specs = {'Bubble Bum': {'color': },
-#              'Harmony':    {'color': },
-#              'Takata':     {'color': '#589F58'}}
-#sns_plot_specs = {'palette': {}}
-#
-#dataset.table['cond'] = dataset.table[['Config', 'Pulse', 'Model', 'Retractor', 'Buckle']].replace(np.nan, '').apply(lambda x: ' '.join(x), axis=1)
-#plot_specs = dict.fromkeys(dataset.table['cond'].unique())
-#
-#plot_specs['sled_213_new_decel 213 Takata Marc_4 short_flex'] =     {'color': '#56c77d'}
-#plot_specs['sled_213_new_decel 213 Takata None original'] =         {'color': '#176331'}
-#plot_specs['sled_213_new_decel 213 Harmony Marc_4 short_flex'] =    {'color': '#ebb0f7'} 
-#plot_specs['sled_213_new_decel 213 Harmony None original'] =        {'color': '#8f21a6'}
-#plot_specs['sled_213_new_decel 213 Bubble Bum Marc_4 short_flex'] = {'color': '#d1d1d1'} 
-#plot_specs['sled_213_new_decel 213 Bubble Bum None original'] =     {'color': '#636363'}
-#
-#plot_specs['sled_213_new_decel TC17-110_88pct Bubble Bum Caravan short_flex'] = None
-#plot_specs['sled_213_new_decel TC17-110_88pct Bubble Bum Marc_4 short_flex'] = None
-#plot_specs['sled_213_new_decel TC17-110_88pct Bubble Bum Marc_4 original'] = None
-#plot_specs['ffrb  Harmony  '] = None
-#plot_specs['ffrb  Bubble Bum  '] = None
-#plot_specs['ffrb  Takata  '] = None
-#
-#
-#
-#sns_specs = {'palette': {'sled_213_new_decel 213 Takata Marc_4 short_flex':     '#56c77d',
-#                         'sled_213_new_decel 213 Takata None original':         '#176331',
-#                         'sled_213_new_decel 213 Harmony Marc_4 short_flex':    '#ebb0f7',
-#                         'sled_213_new_decel 213 Harmony None original':        '#8f21a6',
-#                         'sled_213_new_decel 213 Bubble Bum Marc_4 short_flex': '#d1d1d1',
-#                         'sled_213_new_decel 213 Bubble Bum None original':     '#636363'}}
 
 #%% preprocessing
 flip_sign = [i for i in dataset.table.query('Year==2020 and ATD==\'Y7\'').index if i in dataset.timeseries.index]
@@ -85,12 +36,20 @@ dataset.timeseries.loc[flip_sign, '12CHST0000Y7ACXC'] = dataset.timeseries.loc[f
 dataset.timeseries.at['TC57-999_9', '12HEAD0000Y7ACXA'] = dataset.timeseries.at['TC57-999_9', '12HEADRD00Y7ACXA']
 dataset.timeseries = dataset.timeseries.applymap(lambda x: x-x[0])
 #dataset.features.at['TC57-999_9', 'Min_12HEAD0000Y7ACXA'] = dataset.timeseries.at['TC57-999_9', '12HEAD0000Y7ACXA'].min()
-
+dataset.timeseries.at['SE19-0054_5','S0SLED000000ACXD'] = -dataset.timeseries.at['SE19-0054_5','S0SLED000000ACXD']
 #%% plot excursion values--stacked
 plot_channels = ['Head_Excursion',
                  'Knee_Excursion']
 
-subset = dataset.table.query('Config==\'sled_213_new_decel\' and Pulse==\'213\'')
+# Marc vs. original
+#subset = dataset.table.query('Config==\'sled_213_new_decel\' and Pulse==\'213\'')
+
+# Marc vs. vehicle
+subset = dataset.table.query('Config==\'sled_213_new_decel\' and Model==\'Bubble Bum\' and Retractor!=\'None\'')
+subset['cond'] = subset[['Pulse','Retractor','Buckle']].apply(lambda x: ' '.join(x), axis=1)
+
+
+
 subset['Model'] = subset['Model'].apply(rename)
 grouped = subset.groupby(['ATD'])
 
@@ -98,8 +57,21 @@ for ch in plot_channels:
     for grp in grouped:
         sgrouped = grp[1].groupby(['Retractor'])
         fig, ax = plt.subplots()
-        ax = sns.barplot(x='Model', y=ch, data=sgrouped.get_group('Marc_4'), ci='sd', capsize=0.15, color='#c2c2c2', order=['A','B','C'], ax=ax)
-        ax = sns.barplot(x='Model', y=ch, data=sgrouped.get_group('None'), ci='sd', capsize=0.15, color='#5c5c5c', order=['A','B','C'], ax=ax)
+        
+        
+#        ax = sns.barplot(x='Model', y=ch, data=sgrouped.get_group('Marc_4'), ci='sd', capsize=0.15, color='#c2c2c2', order=['A','B','C'], ax=ax)
+#        ax = sns.barplot(x='Model', y=ch, data=sgrouped.get_group('None'), ci='sd', capsize=0.15, color='#5c5c5c', order=['A','B','C'], ax=ax)
+#        print(grp[0])
+#        print(sgrouped.get_group('Marc_4').groupby('Model').std()[['Head_Excursion','Knee_Excursion']])
+        
+        ax = sns.barplot(x='cond', y=ch, order=['TC17-110_88pct Caravan short_flex', '213 Marc_4 short_flex',
+                                                'TC17-110_88pct Marc_4 short_flex', 'TC17-110_88pct Marc_4 original'],
+                         data=grp[1], ci='sd', capsize=0.15)
+        plt.xticks(rotation=90)
+        print(grp[0])
+        print(grp[1][['Head_Excursion','Knee_Excursion']].agg(['max','min']))
+        
+        
         if 'Head' in ch:
             ax.set_ylim((300, 550))
         elif 'Knee' in ch:
@@ -111,28 +83,33 @@ for ch in plot_channels:
                                     'title': 20,
                                     'axlabels': 18})      
 #%% plot chest and pelvis on the same set of axes
-plot_channels = ['12CHST0000Y7ACXC',
-                 '12PELV0000Y7ACXA']
 
-subset = dataset.table.query('ATD==\'Y7\' and Pulse==\'213\'')
+
+subset = dataset.table.query('Pulse==\'213\'')
 subset['cond'] = subset[['Pulse','Retractor','Buckle']].apply(lambda x: ' '.join(x), axis=1)
 
-grouped = subset.groupby(['Model', 'cond'])
+grouped = subset.groupby(['ATD','Model', 'cond'])
 for grp in grouped:
-    for ch in plot_channels:
-        fig, ax = plt.subplots()
+    fig, ax = plt.subplots()
 #        x = arrange_by_group(subset, dataset.timeseries.loc[grp[1].index, ch], 'cond')
-        
-        x = arrange_by_group(subset, dataset.timeseries.loc[grp[1].index, '12CHST0000Y7ACXC'], 'cond')
-        x['chest'] = x.pop(grp[0][1])
-        ax = plot_overlay(ax, dataset.t, x)
-        x = arrange_by_group(subset, dataset.timeseries.loc[grp[1].index, '12PELV0000Y7ACXA'], 'cond')
-        x['pelvis'] = x.pop(grp[0][1])
-        ax = plot_overlay(ax, dataset.t, x)
-        ax.set_ylim([-80, 10])
-        
-        ax.set_title((ch, grp[0]))
-        ax.legend(bbox_to_anchor=(1,1))
+    
+    x = arrange_by_group(subset, dataset.timeseries.loc[grp[1].index, '12CHST0000{}ACXC'.format(grp[0][0])], 'cond')
+    x['chest'] = x.pop(grp[0][2])
+    ax = plot_overlay(ax, dataset.t, x)
+    y = arrange_by_group(subset, dataset.timeseries.loc[grp[1].index, '12PELV0000{}ACXA'.format(grp[0][0])], 'cond')
+    y['pelvis'] = y.pop(grp[0][2])
+    ax = plot_overlay(ax, dataset.t, y)
+    ax.set_ylim([-80, 10])
+    
+    ax.set_title(grp[0])
+    ax.legend(bbox_to_anchor=(1,1))
+    
+    print(grp[0])
+    print('chest')
+    print(dataset.t[int(x['chest'].apply(np.argmin).mean())])
+    print('pelvis')
+    print(dataset.t[int(y['pelvis'].apply(np.argmin).mean())])
+    print('\n')
         
 #%% plot each channel with different conditions in different colours
 plot_channels = ['HEAD0000Y7ACXA',
@@ -144,7 +121,7 @@ plot_channels = ['HEAD0000Y7ACXA',
 #plot_channels = ['S0SLED000000ACXD']
 #plot_channels = dataset.timeseries.filter(like='Y7').columns
 
-subset = dataset.table.query('Pulse==\'213\' or Config==\'ffrb\'')
+subset = dataset.table.query('Pulse==\'213\' and Retractor==\'Marc_4\'')
 subset['cond'] = subset[['Config', 'Pulse', 'Retractor', 'Buckle']].replace(np.nan, '').apply(lambda x: ' '.join(x), axis=1)
 
 grouped = subset.groupby(['ATD', 'Model'])
@@ -170,10 +147,15 @@ for grp in grouped:
         if len(x)==0: 
             continue
         fig, ax = plt.subplots()
-        ax = plot_overlay(ax, dataset.t, x)
-        
-        ax.set_title((get_merged_name(ch), grp[0]))
-        ax.legend(bbox_to_anchor=(1,1))
+        ax = plot_overlay(ax, dataset.t, x, line_specs={key: {'color': '#000000'} for key in x.keys()})
+        ax = set_labels(ax, {'title': '{0} ({1})'.format(renameISO(get_merged_name(ch_pos)), rename(grp[0][0])),
+                             'xlabel': 'Time [s]',
+                             'ylabel': get_units(get_merged_name(ch_pos))})
+        ax = adjust_font_sizes(ax, {'ticklabels': 18,
+                                    'title': 20,
+                                    'axlabels': 18})
+        ax.set_ylim([-70, 10])        
+#        ax.legend(bbox_to_anchor=(1,1))
         plt.show()
         plt.close(fig)
 
@@ -200,9 +182,15 @@ plot_channels = [['Min_12HEAD0000Y7ACXA','Min_12HEAD0000Q6ACXA'],
                  ['Tmin_12PELV0000Y7ACXA','Tmin_12PELV0000Q6ACXA'],
                  ['Y7_Pelvis-Chest','Q6_Pelvis-Chest']]
 
+# comparing Marc retractor vs. no retractor
 subset = dataset.table.query('Pulse==\'213\'')
-subset['Model'] = subset['Model'].apply(rename)
 subset['cond'] = subset[['Config', 'Pulse', 'Retractor', 'Buckle']].replace(np.nan, '').apply(lambda x: ' '.join(x), axis=1)
+
+# comparing Marc retractor vs. vehicle retractor
+#subset = dataset.table.query('Config==\'sled_213_new_decel\' and Retractor!=\'None\' and Model==\'Bubble Bum\'')
+#subset['cond'] = subset[['Pulse', 'Retractor', 'Buckle']].replace(np.nan, '').apply(lambda x: ' '.join(x), axis=1)
+
+subset['Model'] = subset['Model'].apply(rename)
 subset['cond'] = subset['cond'].apply(rename)
 grouped = subset.groupby(['ATD'])
 
@@ -210,33 +198,137 @@ for grp in grouped:
     for ch in plot_channels:
         data = merge_columns(dataset.features.loc[grp[1].index, ch])
         merged_name = get_merged_name(ch)
-        if (data.dropna()<0).all():
-            data = -data
-        data = pd.concat((grp[1], data), axis=1)
-        fig, ax = plt.subplots()
-        ax = sns.barplot(x='Model', y=merged_name, hue='cond', ci='sd', capsize=0.15, order=['A','B','C'], 
-                         palette={'Modified Belt Assembly': '#c2c2c2',
-                                  'Original Belt Assembly': '#5c5c5c'}, 
-                         hue_order=['Original Belt Assembly','Modified Belt Assembly'], ax=ax, data=data)
-#        plt.legend(bbox_to_anchor=(1,1))
-        ax.get_legend().remove()
+        
         if 'Pelvis-Chest' in merged_name:
             title = 'Pelvis-Chest ({})'.format(rename(grp[0]))
-            ylim = [-10, 15]
+            ylim = [-15, 15]
         elif merged_name.startswith('Tmin'):
             title = 'Time to Peak ' + renameISO(merged_name[5:]) + ' ({})'.format(rename(grp[0]))
             ylim = [0, 0.1]
         elif merged_name.startswith('Min'):
             title = 'Peak ' + renameISO(merged_name[4:]) + ' ({})'.format(rename(grp[0]))
             ylim = [0, 80]
+            data = -data
+
+        data = pd.concat((grp[1], data), axis=1)
+        fig, ax = plt.subplots()
+        
+
+            
+        ax = sns.barplot(x='Model', y=merged_name, hue='cond', ci='sd', capsize=0.15, order=['A','B','C'], 
+                         palette={'Modified Belt Assembly': '#c2c2c2',
+                                  'Original Belt Assembly': '#5c5c5c'}, 
+                         hue_order=['Original Belt Assembly','Modified Belt Assembly'], ax=ax, data=data)
+        ax.get_legend().remove()
+        
+#        ax = sns.barplot(x='cond', y=merged_name, ci='sd', capsize=0.15, 
+#                         order = ['TC17-110_88pct Caravan short_flex', '213 Marc_4 short_flex',
+#                                  'TC17-110_88pct Marc_4 short_flex', 'TC17-110_88pct Marc_4 original'],
+#                         ax=ax, data=data)
+#        ax.set_xticklabels([])
+        
+
+
+            
+            
+            
+            
         ax = set_labels(ax, {'title': title, 'xlabel': 'Model', 'ylabel': get_units(merged_name)})
-        ax = adjust_font_sizes(ax, {'ticklabels': 18,
-                                    'title': 20,
-                                    'axlabels': 18})  
+        ax = adjust_font_sizes(ax, {'title': 24,
+                                    'xlabel': 24,
+                                    'ylabel': 18,
+                                    'xticklabel': 24,
+                                    'yticklabel': 18})  
         ax.set_ylim(ylim)
         if 'Pelvis-Chest' in merged_name:
             ax = set_labels(ax, {'ylabel': 'Acceleration [g]'})
+            
+#        values = data.groupby('cond').mean()[merged_name]
+#        veh_ctrl = values['TC17-110_88pct Caravan short_flex']
+#        print(grp[0])
+##        print(values)
+#        print(values.apply(lambda x: x-veh_ctrl))
+#        print('\n')
+#        print(grp[0])
+#        print(data.groupby(['Model','cond']).mean()[merged_name].groupby(level=0).diff())
+#        print('\n')
+        
+        print(grp[0])
+        print(data[['Model','cond',merged_name]].groupby(['cond','Model']).agg(['mean','std']))
 
+#%% plot peaks in vehicles 
+plot_channels = ['Min_xxHEAD0000Y7ACXA',
+                 'Min_xxCHST0000Y7ACXC',
+                 'Min_xxPELV0000Y7ACXA',
+                 'Min_xxHEAD0000Q6ACXA',
+                 'Min_xxCHST0000Q6ACXC',
+                 'Min_xxPELV0000Q6ACXA',
+                 'Y7_Pelvis-Chest',
+                 'Q6_Pelvis-Chest']
+
+subset = dataset.table.query('(Pulse==\'213\' and Retractor==\'Marc_4\') or Config==\'ffrb\'')
+
+grouped = subset.groupby(['ATD'])
+for grp in grouped:
+    for ch in plot_channels:
+        if grp[0] not in ch:
+            continue
+        ch_pos = [ch.replace('xx',j) for i in grp[1].index.unique() for j in grp[1].loc[[i], ['Pos']].astype(str).values.flatten()]
+        data = pd.Series([dataset.features.at[grp[1].index[i], ch_pos[i]] for i in range(len(ch_pos))], index=grp[1].index)
+        
+        if len(data)==0:
+            continue
+        
+        if 'min' in ch.lower(): 
+            data = -data
+        
+        if data.index.duplicated().any():
+            data = data.reset_index(drop=True)
+            x = grp[1].reset_index(drop=True)
+        else:
+            x = grp[1]
+        x = pd.concat((x, data.to_frame(name=ch)), axis=1)
+            
+        if len(x)==0: 
+            continue
+        fig, ax = plt.subplots()
+        ax = sns.barplot(x='Model', y=ch, hue='Config', ax=ax, data=x)
+        ax = adjust_font_sizes(ax, {'ticklabels': 18,
+                                    'title': 20,
+                                    'axlabels': 18})
+        ax.legend(bbox_to_anchor=(1,1))
+        plt.show()
+        plt.close(fig)
+
+#%% plot sled pulse
+ch = 'S0SLED000000ACXD'
+subset = dataset.table.query('Pulse==\'213\' or Pulse==\'TC17-110_88pct\'')
+grouped = subset.groupby('Pulse')
+
+for grp in grouped:
+    fig, ax = plt.subplots()
+    x = {'x': dataset.timeseries.loc[grp[1].index, ch]}
+    ax = plot_overlay(ax, dataset.t, x, line_specs = {'x': {'color': 'k'}})
+    ax = set_labels(ax, {'title': rename(grp[0]), 'xlabel': 'Time [s]', 'ylabel': get_units(ch)})
+    ax = adjust_font_sizes(ax, {'title': 20, 'ticklabels': 18, 'axlabels': 18})
+    ax.set_ylim([-30, 10])
+    print(x['x'].apply(np.min).agg(['max','min']))
+
+#%%
+import xlwings as xw
+import xlsxwriter
+
+def plot_excel(ax, workbook=None):
+    if workbook is None:
+        wb = xw.Book()
+        sht = wb.sheets['Sheet1']
     
-#    print(data.groupby(['cond_2','cond_1']).mean()[get_merged_name(ch)])
-#    print(data.groupby(['cond_2','cond_1']).mean()[get_merged_name(ch)].groupby(level=0).diff())
+    # get axis labels
+    ax_labels = {'title': ax.title.get_text(),
+                 'xlabel': ax.xaxis.get_label().get_text(),
+                 'ylabel': ax.yaxis.get_label().get_text(),
+                 'legend': ax.get_legend()}
+    
+    # print the values
+    
+    
